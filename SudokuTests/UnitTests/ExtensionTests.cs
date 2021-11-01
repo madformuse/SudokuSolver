@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using SudokuSolver;
 
-namespace SudokuTests
+namespace SudokuTests.UnitTests
 {
     [TestClass]
     public class ExtensionTests

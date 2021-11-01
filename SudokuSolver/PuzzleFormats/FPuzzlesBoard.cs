@@ -48,6 +48,7 @@ namespace SudokuSolver.PuzzleFormats
         FPuzzlesLines[] palindrome,
         FPuzzlesLines[] renban,
         FPuzzlesLines[] whispers,
+        FPuzzlesLines[] lockout,
         FPuzzlesLines[] regionsumline,
         FPuzzlesCells[] difference,
         FPuzzlesCells[] xv,

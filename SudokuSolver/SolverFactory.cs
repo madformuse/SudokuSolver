@@ -600,6 +600,25 @@ namespace SudokuSolver
                 }
             }
 
+            if (fpuzzlesData.lockout != null)
+            {
+                foreach (var lockout in fpuzzlesData.lockout)
+                {
+                    foreach (var line in lockout.lines)
+                    {
+                        StringBuilder cells = new();
+                        foreach (var cell in line)
+                        {
+                            if (!string.IsNullOrWhiteSpace(cell))
+                            {
+                                cells.Append(cell);
+                            }
+                        }
+                        solver.AddConstraint(typeof(LockoutLineConstraint), cells.ToString());
+                    }
+                }
+            }
+
             bool negativeRatio = fpuzzlesData.negative?.Contains("ratio") ?? false;
             if (fpuzzlesData.ratio != null && fpuzzlesData.ratio.Length > 0 || negativeRatio)
             {
@@ -1137,6 +1156,18 @@ namespace SudokuSolver
                 sandwichsum.Add(new(CN(c.cellStart), c.sum.ToString()));
             }
 
+            List<FPuzzlesLines> lockoutLine = new();
+            foreach (var c in solver.Constraints<LockoutLineConstraint>())
+            {
+                string[][] lines = new string[1][];
+                lines[0] = new string[c.Cells.Count];
+                for(var index = 0; index < c.Cells.Count; index++)
+                {
+                    lines[0][index] = CN(c.Cells[index]);
+                }
+                lockoutLine.Add(new(lines));
+            }
+
             FPuzzlesBoard fp = new(
                 size: solver.WIDTH,
                 title: solver.Title,
@@ -1169,7 +1200,8 @@ namespace SudokuSolver
                 clone: clone.ToArray(),
                 quadruple: quadruple.ToArray(),
                 betweenline: betweenline.ToArray(),
-                sandwichsum: sandwichsum.ToArray()
+                sandwichsum: sandwichsum.ToArray(),
+                lockout: lockoutLine.ToArray()
             );
 
             string fpuzzlesJson = JsonSerializer.Serialize(fp);

@@ -8,23 +8,23 @@ using static SudokuSolver.SolverUtility;
 using SudokuSolver;
 using SudokuSolver.Constraints;
 
-namespace SudokuTests
+namespace SudokuTests.UnitTests
 {
     [TestClass]
-    public class ArrowTests
+    public class ArrowTests : ConstraintTests<ArrowSumConstraint>
     {
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void MustSupplyTwoGroups()
         {
             // Only providing one group where two are required
-            var arrow = new ArrowSumConstraint(SolverFactory.CreateBlank(9), "r1c1");
+            CreateConstraint("r1c1");
         }
 
         [TestMethod]
         public void PopulatesCellGroups()
         {
-            var arrow = WithOptions("r1c1; r1c2r1c3");
+            var arrow = CreateConstraint("r1c1; r1c2r1c3");
 
             Assert.AreEqual(1, arrow.circleCells.Count);
             Assert.AreEqual(2, arrow.arrowCells.Count);
@@ -37,60 +37,52 @@ namespace SudokuTests
         [TestMethod]
         public void NamedAfterCircleCell()
         {
-            var arrow = WithOptions("r1c1; r1c2r1c3");
-
-            Assert.AreEqual("Arrow at r1c1", arrow.SpecificName);
+            Assert.AreEqual("Arrow at r1c1", CreateConstraint("r1c1; r1c2r1c3").SpecificName);
         }
 
         [TestMethod]
         public void CantHaveMoreThan3CircleCells()
         {
-            var solver = SolverFactory.CreateBlank(16);
-
             // Multi-cell circles must (arrowCells.Count * MAX_VALUE) > 99. So we
             // need at least 7 arrow cells in 16x16.
-            var broken_arrow = WithOptions("r1c1r1c2r1c3r1c4; r1c5r1c6r1c7r1c8r1c9r1c10r1c11", solver);
-            var working_arrow = WithOptions("r2c1r2c2r2c3; r1c6r1c7r1c8r1c9r1c10r1c11r1c12", solver);
+            var broken_arrow = CreateConstraint("r1c1r1c2r1c3r1c4; r1c5r1c6r1c7r1c8r1c9r1c10r1c11", 16);
+            var working_arrow = CreateConstraint("r2c1r2c2r2c3; r1c6r1c7r1c8r1c9r1c10r1c11r1c12", 16);
 
-            Assert.AreEqual(LogicResult.Invalid, broken_arrow.InitCandidates(solver));
-            Assert.AreEqual(LogicResult.Changed, working_arrow.InitCandidates(solver));
+            Assert.AreEqual(LogicResult.Invalid, broken_arrow.InitCandidates(SudokuSolver));
+            Assert.AreEqual(LogicResult.Changed, working_arrow.InitCandidates(SudokuSolver));
         }
 
         [TestMethod]
         public void ArrowCellsConstainedMax()
         {
-            var solver = SolverFactory.CreateBlank(9);
-            var arrow = WithOptions("r1c1; r1c2r1c3r1c4", solver);
+            var arrow = CreateConstraint("r1c1; r1c2r1c3r1c4");
 
-            arrow.InitCandidates(solver);
+            arrow.InitCandidates(SudokuSolver);
 
             // 3 arrow cells, max any one cell can be is 7 (if max is 9)
-            Assert.AreEqual(7, MaxValue(solver.Board[0, 1]));
+            Assert.AreEqual(7, MaxValue(SudokuSolver.Board[0, 1]));
         }
 
         [TestMethod]
         public void CircleConstrainedMin()
         {
-            var solver = SolverFactory.CreateBlank(9);
-            var arrow = WithOptions("r1c1; r1c2r1c3r1c4", solver);
+            var arrow = CreateConstraint("r1c1; r1c2r1c3r1c4");
 
-            arrow.InitCandidates(solver);
+            arrow.InitCandidates(SudokuSolver);
 
             // 3 arrow cells, min circle can be is 3
-            Assert.AreEqual(3, MinValue(solver.Board[0,0]));
+            Assert.AreEqual(3, MinValue(SudokuSolver.Board[0,0]));
         }
 
         [TestMethod]
         public void MaxFirstDigitWorksWhen16by16()
         {
-            var solver = SolverFactory.CreateBlank(16);
-
             // Arrow 7 cells long
-            var arrow = WithOptions("r1c1r1c2; r1c3r1c4r1c5r1c6r1c7r1c8r1c9", solver);
+            var arrow = CreateConstraint("r1c1r1c2; r1c3r1c4r1c5r1c6r1c7r1c8r1c9", 16);
 
-            arrow.InitCandidates(solver);
+            arrow.InitCandidates(SudokuSolver);
 
-            Assert.AreEqual(11, MaxValue(solver.Board[0, 0]), "7 * 16 = 112 so first digit should be <= 11");
+            Assert.AreEqual(11, MaxValue(SudokuSolver.Board[0, 0]), "7 * 16 = 112 so first digit should be <= 11");
         }
 
         [TestMethod]
@@ -268,22 +260,20 @@ namespace SudokuTests
         [TestMethod]
         public void Bug_CodeAssumesCellLessThan10()
         {
-            var solver = SolverFactory.CreateBlank(16);
-            var arrow = WithOptions("r1c1;r1c2r1c3", solver);
+            var arrow = CreateConstraint("r1c1;r1c2r1c3", 16);
 
-            arrow.InitCandidates(solver);
+            arrow.InitCandidates(SudokuSolver);
 
             // Was throwing OutOfRangeException
-            arrow.StepLogic(solver, new List<LogicalStepDesc>(), false);
+            arrow.StepLogic(SudokuSolver, new List<LogicalStepDesc>(), false);
         }
 
         [TestMethod]
         public void Bug_SumLessThanMaxCanFit()
         {
-            var solver = SolverFactory.CreateBlank(16);
-            var arrow = WithOptions("r1c1r1c2; r1c3", solver);
+            var arrow = CreateConstraint("r1c1r1c2; r1c3", 16);
 
-            Assert.AreEqual(LogicResult.Changed, arrow.InitCandidates(solver));
+            Assert.AreEqual(LogicResult.Changed, arrow.InitCandidates(SudokuSolver));
         }
 
         [TestMethod]
@@ -364,35 +354,10 @@ namespace SudokuTests
 
         #endregion
 
-        
 
-        private void TestLogic(String options, int gridSize, LogicResult expectedResult, String messageContains, Action<Solver> setup, Action<Solver> after = null)
+        protected override ArrowSumConstraint CreateConstraint(Solver solver, string options)
         {
-            var solver = SolverFactory.CreateBlank(gridSize);
-            var arrow = WithOptions(options, solver);
-
-            arrow.InitCandidates(solver);
-
-            setup(solver);
-
-            var step = new List<LogicalStepDesc>();
-
-            Assert.AreEqual(expectedResult, arrow.StepLogic(solver, step, false));
-
-            Assert.IsTrue(step[0].desc.Contains(messageContains), step[0].desc);
-
-            if(after != null)
-            {
-                after(solver);
-            }
+            return new ArrowSumConstraint(solver, options);
         }
-
-        private ArrowSumConstraint WithOptions(String options, Solver solver = null)
-        {
-            return new ArrowSumConstraint(solver != null ? solver : SolverFactory.CreateBlank(9), options);
-        }
-
-        
-
     }
 }
