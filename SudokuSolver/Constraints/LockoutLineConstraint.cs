@@ -96,15 +96,20 @@ namespace SudokuSolver.Constraints
 
         public override bool EnforceConstraint(Solver sudokuSolver, int i, int j, int val)
         {
-            //var result = LogicResult.Changed;
+            if(! Cells.Contains((i,j)))
+            {
+                return true;
+            }
 
-            //while (result == LogicResult.Changed)
-            //{
-            //    result = StepLogic(sudokuSolver, (List<LogicalStepDesc>)null, false);
-            //}
+            var result = LogicResult.Changed;
 
-            //return result != LogicResult.Invalid;
-            return true;
+            while (result == LogicResult.Changed)
+            {
+                result = StepLogic(sudokuSolver, (List<LogicalStepDesc>)null, false);
+            }
+
+            return result != LogicResult.Invalid;
+            //return true;
         }
 
         public override LogicResult StepLogic(Solver sudokuSolver, List<LogicalStepDesc> logicalStepDescription, bool isBruteForcing)
