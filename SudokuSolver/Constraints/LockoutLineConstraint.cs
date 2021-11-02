@@ -34,25 +34,35 @@ namespace SudokuSolver.Constraints
             diamonds.Add(Cells[^1]);
 
             line = Cells.Where(cell => !IsDiamond(cell)).ToList();
+
+            this.minimumDifference = MAX_VALUE / 2;
         }
 
         public override LogicResult InitCandidates(Solver sudokuSolver)
         {
-            CalculateRequiredDifference(sudokuSolver);
+            CalculateMaximumDifference(sudokuSolver);
 
             return RemoveImpossibleDigitsFromLine(sudokuSolver);
         }
 
         private LogicResult RemoveImpossibleDigitsFromLine(Solver solver)
         {
-            if(MAX_VALUE % 2 == 0)
+            // In odd sized grids the middle digit is impossible
+            // [1 2 3 4 [5] 6 7 8 9]
+            // Even grids have 2 impossible
+            // [1 2 3 [4 5] 6 7 8]
+
+            uint impossibleMask = 0;
+            
+            if(MAX_VALUE % 2 == 1)
             {
-                // Only odd sized grids have impossible digits
-                return LogicResult.None;
+                impossibleMask = ValueMask(this.minimumDifference + 1);
             }
-
-            var impossible = MAX_VALUE / 2 + 1;
-
+            else
+            {
+                impossibleMask = ValuesMask(this.minimumDifference, this.minimumDifference + 1);
+            }
+            
             bool changed = false;
 
 
@@ -60,23 +70,21 @@ namespace SudokuSolver.Constraints
             {
                 var cell = Cells[cellIndex];
 
-                var currentMask = solver.Board[cell.Item1, cell.Item2];
+                var result = solver.ClearMask(cell.Item1, cell.Item2, impossibleMask);
 
-                if (!solver.ClearValue(cell.Item1, cell.Item2, impossible))
+                if(result == LogicResult.Invalid)
                 {
-                    return LogicResult.Invalid;
+                    return result;
                 }
 
-                changed = changed ? true : currentMask != solver.Board[cell.Item1, cell.Item2];
+                changed = changed ? true : result == LogicResult.Changed;
             }
 
             return changed ? LogicResult.Changed : LogicResult.None;
         }
 
-        private void CalculateRequiredDifference(Solver sudokuSolver)
+        private void CalculateMaximumDifference(Solver sudokuSolver)
         {
-            this.minimumDifference = MAX_VALUE / 2;
-
             // The max difference between diamonds is constrained by groups which force distinct digits on the line.
             
             var groups = sudokuSolver.SplitIntoGroups(line).OrderByDescending(group => group.Count).ToList();

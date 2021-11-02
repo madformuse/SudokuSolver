@@ -67,6 +67,19 @@ namespace SudokuTests.UnitTests
         }
 
         [TestMethod]
+        public void InEvenGridMiddle2DigitsAreImpossible()
+        {
+            var lockout = CreateConstraint("r1c1-4", 16);
+
+            lockout.InitCandidates(SudokuSolver);
+
+            var lineCellMask = SudokuSolver.Board[0, 2];
+
+            Assert.IsFalse(HasValue(lineCellMask, 8));
+            Assert.IsFalse(HasValue(lineCellMask, 9));
+        }
+
+        [TestMethod]
         public void DetectsInvalidDiamondValues()
         {
             TestLogic(
